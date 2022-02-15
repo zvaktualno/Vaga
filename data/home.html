@@ -1,0 +1,127 @@
+<!doctype html>
+
+<html lang="en">
+
+    <head>
+        <meta name='viewport' charset="UTF-8" content='width=device-width, initial-scale=1' />
+		<script src='/src/jquery.min.js'></script>
+        <script src='/src/bootstrap.bundle.min.js'></script>
+        <script src='/src/bootstrap.min.js'></script>
+        <link rel='stylesheet' type='text/css' href='/src/bootstrap.min.css'>
+<style>
+	#outputWin{
+		height: 150px;
+		width: 100%;
+		border:black 1px solid;
+		border-radius: 10px;
+		margin: 5px;
+		overflow: auto;
+  		flex-direction: column-reverse;
+
+	}
+	button{
+		width:100%;
+		margin-top: 10px;
+		padding: 0;
+	}
+	
+	#mass{
+		font-size: xx-large;
+		text-align: center;
+		margin: auto;
+		position:relative;
+		top:50%;
+	}
+</style>
+    </head>
+
+    <body>
+        <div id="main">
+            <div class='container-fluid'>
+				<div class="row">
+					<div class="col-sm-1 col-0"></div>
+					<div class="col-sm-5 col-12" ><div id="mass"></div></div>
+					<div class="col-sm-5 col-12">
+						<div class="row">
+							<div class="col-6">
+								<button id="calibrate" class="btn btn-dark">KALIBRIRAJ</button>
+							</div>
+							<div class="col-6">
+								<button id="tare" class="btn btn-dark">TARA</button>
+							</div>
+							<div id="outputWin"class="col-12"></div>
+						</div>
+					</div>
+					<div class="col-sm-1 col-0"></div>
+
+				</div>
+				
+        	</div>
+        </div>
+
+        <script>
+            
+
+            function animateValue(obj_id, start, end, duration, unit, decimals) {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    document.getElementById(obj_id).innerHTML = (progress * (end - start) + start).toFixed(
+                        decimals) + " " + unit;
+
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+			function updateScroll(){
+				var element = document.getElementById("outputWin");
+				element.scrollTop = element.scrollHeight;
+			}
+
+            const status = {
+                animation_time: 10,
+                _mass: 0,
+                prev_mass: 0,
+
+                set mass(value) {
+                    this.prev_mass = this._mass;
+                    this._mass = value;
+                    animateValue("mass", this.prev_mass, this._mass, this.animation_time, "g", 2);
+                }
+
+            }
+
+			$('#calibrate').click(function (e) {
+                    e.preventDefault();
+                    var xhttp = new XMLHttpRequest();
+					xhttp.open("GET", "/calibrate", true);
+					xhttp.send();
+                });
+
+			$('#tare').click(function (e) {
+                    e.preventDefault();
+                    var xhttp = new XMLHttpRequest();
+					xhttp.open("GET", "/tare", true);
+					xhttp.send();
+                });
+				
+            if (!!window.EventSource) {
+                var source = new EventSource('/data');
+                source.addEventListener('weight', function (e) {
+					console.log(e.data);
+					status.mass = parseFloat(e.data);
+                }, false);
+				source.addEventListener('console', function (e) {
+					console.log(e.data);
+					document.getElementById("outputWin").innerHTML+="<div>"+e.data+"</div>";
+					updateScroll();
+                }, false);
+            }
+        </script>
+    </body>
+
+</html>
